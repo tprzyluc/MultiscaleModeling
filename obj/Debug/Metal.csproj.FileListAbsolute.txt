@@ -1,0 +1,20 @@
+C:\Users\kabas\source\repos\Metal\Metal\bin\Debug\Metal.exe.config
+C:\Users\kabas\source\repos\Metal\Metal\bin\Debug\Metal.exe
+C:\Users\kabas\source\repos\Metal\Metal\bin\Debug\Metal.pdb
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.csprojResolveAssemblyReference.cache
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.Form1.resources
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.Properties.Resources.resources
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.csproj.GenerateResource.Cache
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.csproj.CoreCompileInputs.cache
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.exe
+C:\Users\kabas\source\repos\Metal\Metal\obj\Debug\Metal.pdb
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\bin\Debug\Metal.exe.config
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\bin\Debug\Metal.exe
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\bin\Debug\Metal.pdb
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csprojAssemblyReference.cache
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.Form1.resources
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.Properties.Resources.resources
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csproj.GenerateResource.cache
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csproj.CoreCompileInputs.cache
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.exe
+C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.pdb
