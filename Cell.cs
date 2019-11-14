@@ -9,10 +9,13 @@ namespace Metal
     class Cell
     {
         public int grainID;
-
+        public bool selected;
+        public bool boundary;
         public Cell()
         {
             grainID = -1;
+            selected = false;
+            boundary = false;
         }
     }
 }

@@ -18,6 +18,9 @@ namespace Metal
         public int grainsCount;
         public int minimalGrainsDistance;
         public int seedPlacement;
+        public int inclusions;
+        public int probability;
+        public int selected_grains_counter;
 
         public SimulationConfig(int X, int Y, int count, neighborhood type, int distance)
         {

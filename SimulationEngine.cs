@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Metal
@@ -9,18 +12,16 @@ namespace Metal
     class SimulationEngine
     {        
         public List<Grain> grainList;
+        public List<Grain> selected_grains = new List<Grain>();
         public Cell[,] board;
         public SimulationConfig config;
-        Random rnd;
+        public List<int> selected_grain_ids = new List<int>();
+        Random rnd = new Random();
 
-        
-
-        public SimulationEngine(SimulationConfig config)
+        public SimulationEngine(SimulationConfig config, bool is_loaded)
         {
             this.config = config;
-            rnd = new Random();
 
-            //stwórz przestrzen automatu
             board = new Cell[config.boardSizeX, config.boardSizeY];
             for (int i = 0; i < config.boardSizeX; i++)
             {
@@ -30,30 +31,39 @@ namespace Metal
                 }
             }
 
-            //stwórz listę ziaren
             grainList = new List<Grain>();
             for (int i = 0; i < config.grainsCount; i++)
             {
                 grainList.Add(new Grain(i, config.grainsCount));
             }
 
-            //rozmieść zarodki
-            switch(config.seedPlacement)
+            if (!is_loaded)
+                GenerateRandomSeeds();
+
+
+        }
+        [JsonConstructor]
+        public SimulationEngine(SimulationConfig config)
+        {
+            this.config = config;
+           // rnd = new Random();
+            
+            board = new Cell[config.boardSizeX, config.boardSizeY];
+            for (int i = 0; i < config.boardSizeX; i++)
             {
-                case 0:
-                    //losowe
-                    GenerateRandomSeeds();
-                    break;
-                case 1:
-                    //równomierne
-                    GenerateEqualSeeds();
-                    break;
-                case 2:
-                    //losowe z promieniem
-                    GenerateRandomSeedsWithDistance();
-                    break;
+                for (int j = 0; j < config.boardSizeY; j++)
+                {
+                    board[i, j] = new Cell();
+                }
             }
 
+            grainList = new List<Grain>();
+            for (int i = 0; i < config.grainsCount; i++)
+            {
+                grainList.Add(new Grain(i, config.grainsCount));
+            }
+           GenerateRandomSeeds();
+            
 
         }
 
@@ -67,90 +77,18 @@ namespace Metal
                 board[x, y].grainID = grain.ID;
             }
         }
-
-        public void GenerateEqualSeeds()
+        public void GenerateRandomSeeds_v2()
         {
-            double n = Math.Sqrt(config.grainsCount);
-            if (Math.Floor(n) != n)
-            {
-                //musze znaleźć nabliższą libcze posiadającą pierwiastek
-                double c1 = config.grainsCount;
-                double c2 = config.grainsCount;
-                do
-                {
-                    c1++;
-                    c2--;
-                    if (Math.Floor(Math.Sqrt(c1)) == Math.Sqrt(c1))
-                    {
-                        n = Math.Sqrt(c1);
-                        break;
-                    }
-                    if (Math.Floor(Math.Sqrt(c2)) == Math.Sqrt(c2))
-                    {
-                        n = Math.Sqrt(c2);
-                        break;
-                    }
-                } while (true);
-            }
-            //mogę podzielić zarodki na planszę nxn
-            config.grainsCount = (int)(n * n);
-            grainList = new List<Grain>();
-            for (int i = 0; i < config.grainsCount; i++)
-            {
-                grainList.Add(new Grain(i, config.grainsCount));
-            }
-
-            int xSpan = (int)Math.Floor(config.boardSizeX / (n + 1));
-            int ySpan = (int)Math.Floor(config.boardSizeY / (n + 1));
-
-            int counter = 0;
-
-            for(int i = 0; i < n; i++)
-            {
-                for(int j = 0; j < n; j++)
-                {
-                    board[(i + 1) * xSpan, (j + 1) * ySpan].grainID = grainList[counter].ID;
-                    counter++;
-                }
-            }
-
-        }
-
-        public void GenerateRandomSeedsWithDistance()
-        {
-            List<int> Xs = new List<int>();
-            List<int> Ys = new List<int>();
-            int x;
-            int y;
-            int counter = 0;
-            double distance= 0;
             Random rnd = new Random();
-            for (int i=0 ; i < grainList.Count;i++)
+            foreach (Grain grain in grainList)
             {
-                do {
-                    distance = config.minimalGrainsDistance;
-                    if (counter == 100000)
-                    {
-                        //prawdopodobnie nie uda się umieścić tego zarodka
-                        System.Windows.Forms.MessageBox.Show("Po 1000 prób nie udało się umieści zarodka nr "+i,"Błąd");
-                    }
-                    x = rnd.Next(0, config.boardSizeX);
-                    y = rnd.Next(0, config.boardSizeY);
-                    for(int j = 0; j < i; j++)
-                    {
-                        double dst = Math.Sqrt(Math.Pow(x - Xs[j], 2) + Math.Pow(y - Ys[j], 2));
-                        if (dst < distance)
-                            distance = dst;
-                    }
-                    counter++;
-                    if (i == 0)
-                        distance = config.minimalGrainsDistance;
-                } while (distance<config.minimalGrainsDistance);
-                Xs.Add(x);
-                Ys.Add(y);
-                board[x, y].grainID = grainList.ElementAt(i).ID;
+                int x = rnd.Next(0, config.boardSizeX);
+                int y = rnd.Next(0, config.boardSizeY);
+                if (board[x, y].grainID == -1 )
+                    board[x, y].grainID = grain.ID;
             }
         }
+
 
         public void GenerateNextStep()
         {
@@ -161,6 +99,7 @@ namespace Metal
                 {
                     nextBoard[i, j] = new Cell();
                     nextBoard[i, j].grainID = board[i, j].grainID;
+                    nextBoard[i, j].selected = board[i, j].selected;
                 }
             }
 
@@ -178,46 +117,38 @@ namespace Metal
 
         private void overtakeCells(Cell[,] nextBoard, int x, int y)
         {
-            //znajdź komplet 8 sąiadów
             List<int> Xs = new List<int>();
             List<int> Ys = new List<int>();
             CalculateNeighorhood(x, y, Xs, Ys);
 
-            //w lazeżności od wybranego sąsiedztwa zajmij komórki
             List<List<int>> validNeighborhood = new List<List<int>>();
             switch (config.simulationType)
             {
                 case 0:
                     //von neumann
                     validNeighborhood = prepareNeumann(Xs, Ys);
+                    Xs = validNeighborhood[0];
+                    Ys = validNeighborhood[1];
+
+                    overtake_von_neumann(nextBoard, x, y, Xs, Ys);
+
+
                     break;
                 case 1:
                     //moore
                     validNeighborhood = prepareMoore(Xs, Ys);
-                    break;
-                case 2:
-                    //hex left
-                    validNeighborhood = prepareHexLeft(Xs, Ys);
-                    break;
-                case 3:
-                    //hex right
-                    validNeighborhood = prepareHexRight(Xs, Ys);
-                    break;
-                case 4:
-                    //hex random
-                    validNeighborhood = prepareHexRand(Xs, Ys);
-                    break;
-                case 5:
-                    //pent random
-                    validNeighborhood = preparePentRandom(Xs, Ys);
-                    break;
 
+                    Xs = validNeighborhood[0];
+                    Ys = validNeighborhood[1];
+
+                    overtake_moore(nextBoard, x, y, Xs, Ys);
+                    break;
             }
 
-            Xs = validNeighborhood[0];
-            Ys = validNeighborhood[1];
+            //Xs = validNeighborhood[0];
+            //Ys = validNeighborhood[1];
 
-            overtake(nextBoard, x, y, Xs, Ys);
+            //overtake(nextBoard, x, y, Xs, Ys);
 
         }
 
@@ -226,7 +157,7 @@ namespace Metal
             int[] xParam = { -1, x, -1 };
             int[] yParam = { -1, y, -1 };
 
-            //policz współrzędne punktów tworzących krzyż
+          
             calculateCross(xParam, yParam);
             Xs.Add(xParam[0]);
             Ys.Add(yParam[0]);
@@ -255,91 +186,275 @@ namespace Metal
 
         private void calculateCross(int[] x, int[] y)
         {
-            if (config.pbc)
-            {
-                if (x[1] - 1 < 0)
-                {
-                    x[0] = config.boardSizeX - 1;
-                }
-                else
-                {
-                    x[0] = x[1] - 1;
-                }
+          
+            if (x[1] - 1 >= 0)
+                x[0] = x[1] - 1;
+            
+            if (x[1] + 1 < config.boardSizeX)
+                x[2] = x[1] + 1;
 
-                if (x[1] + 1 == config.boardSizeX)
-                {
-                    x[2] = 0;
-                }
-                else
-                {
-                    x[2] = x[1] + 1;
-                }
-
-                if (y[1] - 1 < 0)
-                {
-                    y[0] = config.boardSizeY - 1;
-                }
-                else
-                {
-                    y[0] = y[1] - 1;
-                }
-
-                if (y[1] + 1 == config.boardSizeY)
-                {
-                    y[2] = 0;
-                }
-                else
-                {
-                    y[2] = y[1] + 1;
-                }
-            }
-            else
-            {
-                //policz bez pbc
-                if (x[1] - 1 >= 0)
-                {
-                    x[0] = x[1] - 1;
-                }
-
-                if (x[1] + 1 < config.boardSizeX)
-                {
-                    x[2] = x[1] + 1;
-                }
-
-                if (y[1] - 1 >= 0)
-                {
-                    y[0] = y[1] - 1;
-                }
-
-                if (y[1] + 1 < config.boardSizeY)
-                {
-                    y[2] = y[1] + 1;
-                }
-            }
-
-
+            if (y[1] - 1 >= 0)            
+                y[0] = y[1] - 1;
+            
+            if (y[1] + 1 < config.boardSizeY)
+                y[2] = y[1] + 1;
+            
         }
 
-        private void overtake(Cell[,] nextBoard, int x, int y, List<int> Xs, List<int> Ys)
+     
+
+        private void overtake_von_neumann(Cell[,] nextBoard, int x, int y, List<int> Xs, List<int> Ys)
         {
+            if (!board[x, y].selected)
+            {
+                if (board[x, y].grainID >= 0)
+                {
+                    for (int i = 0; i < Xs.Count; i++)
+                    {
+                        if (Xs[i] >= 0 && Ys[i] >= 0)
+                        {
+                            if (board[Xs[i], Ys[i]].grainID == -1)
+                            {
+                                if (nextBoard[Xs[i], Ys[i]].grainID != -1)
+                                {
+                                    if (nextBoard[Xs[i], Ys[i]].grainID == -2)
+                                        continue;
+                                    if (board[Xs[i], Ys[i]].selected)
+                                        continue;
+                                    if (nextBoard[Xs[i], Ys[i]].selected)
+                                        continue;
+
+                                    int[] color_lead = new int[Xs.Count];
+
+
+
+                                    if (Xs[0] >= 0 && Ys[0] >= 0)
+                                    {
+                                        color_lead[0] = board[Xs[0], Ys[0]].grainID;
+                                    }
+                                    if (Xs[1] >= 0 && Ys[1] >= 0)
+                                    {
+                                        color_lead[1] = board[Xs[1], Ys[1]].grainID;
+                                    }
+
+                                    if (Xs[2] >= 0 && Ys[2] >= 0)
+                                    {
+                                        color_lead[2] = board[Xs[2], Ys[2]].grainID;
+                                    }
+
+                                    if (Xs[3] >= 0 && Ys[3] >= 0)
+                                    {
+                                        color_lead[3] = board[Xs[3], Ys[3]].grainID;
+                                    }
+
+
+                                    var k = (from numbers in color_lead
+                                             group numbers by numbers into grouped
+                                             select new { Number = grouped.Key, Freq = grouped.Count() }).FirstOrDefault();
+
+                                    if (k.Number == -1)
+                                        continue;
+                                    if (k.Number == -2)
+                                        continue;
+
+
+
+                                    nextBoard[Xs[i], Ys[i]].grainID = k.Number;
+                                }
+                                else
+                                {
+                                    if (nextBoard[Xs[i], Ys[i]].grainID == -2)
+                                        continue;
+                                    if (board[Xs[i], Ys[i]].selected)
+                                        continue;
+                                    if (nextBoard[Xs[i], Ys[i]].selected)
+                                        continue;
+                                    nextBoard[Xs[i], Ys[i]].grainID = board[x, y].grainID;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        private void overtake_moore(Cell[,] nextBoard, int x, int y, List<int> Xs, List<int> Ys)
+        {
+            //for (int i = 0; i < Xs.Count; i++)
+            //{
+            //    Console.WriteLine("X: " + x + " Y: " + y + " Xs: " + Xs[i] + " Ys: " + Ys[i]);
+            //}
             if (board[x, y].grainID >= 0)
             {
                 for (int i = 0; i < Xs.Count; i++)
                 {
                     if (Xs[i] >= 0 && Ys[i] >= 0)
                     {
-                        if (board[Xs[i], Ys[i]].grainID == -1)//jeżeli komórka nie była zajęta w poprzednim kroku
+                        if (board[Xs[i], Ys[i]].grainID == -1)
                         {
-                            if (nextBoard[Xs[i], Ys[i]].grainID != -1)//jeżeli komórka jest już zajęta w tym kroku
+                            if (nextBoard[Xs[i], Ys[i]].grainID != -1)
                             {
-                                Random rnd = new Random();
-                                if (rnd.Next(0, 1) == 1)//szansa 50%
+                                if (nextBoard[Xs[i], Ys[i]].grainID == -2)
+                                    continue;
+
+                                int[] color_lead = { -1, -1, -1, -1, -1, -1, -1, -1 };
+                                int[] color_lead_2 = { -1, -1, -1, -1};
+                                int[] color_lead_3 = { -1, -1, -1, -1};
+
+
+                            
+
+                                object balanceLock = new object();
+                                for (int j = 0; j < Xs.Count; j++)
+                                    if (Xs[j] >= 0 && Ys[j] >= 0)
+                                        color_lead[j] = board[Xs[j], Ys[j]].grainID;
+
+
+
+                                
+                                
+                                    var k = (from numbers in color_lead
+                                             group numbers by numbers into grouped
+                                             select new { Number = grouped.Key, Freq = grouped.Count() }).FirstOrDefault();
+                                
+
+
+                                if (k.Freq < 5)
                                 {
-                                    nextBoard[Xs[i], Ys[i]].grainID = board[x, y].grainID;
+                                    int a = 0;
+                                    //for (int j = 1; j < Xs.Count; j += 2)
+                                    //    if (Xs[j] >= 0 && Ys[j] >= 0)
+                                    //    {
+                                    //        color_lead_2[a] = board[Xs[j], Ys[j]].grainID;
+                                    //        a++;
+                                    //    } 
+
+                                    if (Xs[1] >= 0 && Ys[1] >= 0)
+                                    {
+                                        color_lead_2[a] = board[Xs[1], Ys[1]].grainID;
+
+                                        a++;
+                                    }
+                                    if (Xs[3] >= 0 && Ys[3] >= 0)
+                                    {
+                                        color_lead_2[a] = board[Xs[3], Ys[3]].grainID;
+
+                                        a++;
+                                    }
+                                    if (Xs[4] >= 0 && Ys[4] >= 0)
+                                    {
+                                        color_lead_2[a] = board[Xs[4], Ys[4]].grainID;
+
+                                        a++;
+                                    }
+                                    if (Xs[6] >= 0 && Ys[6] >= 0)
+                                    {
+                                        color_lead_2[a] = board[Xs[6], Ys[6]].grainID;
+
+                                        a++;
+                                    }
+
+                                    var m = (from numbers in color_lead_2
+                                             group numbers by numbers into grouped
+                                             select new { Number = grouped.Key, Freq = grouped.Count() }).FirstOrDefault();
+                                    if (m.Freq < 3)
+                                    {
+                                        a = 0;
+                                        //for (int j = 0; j < Xs.Count; j += 2)
+                                            if (Xs[0] >= 0 && Ys[0] >= 0)
+                                            {
+                                                color_lead_3[a] = board[Xs[0], Ys[0]].grainID;
+
+                                                a++;
+                                            }
+                                            if (Xs[2] >= 0 && Ys[2] >= 0)
+                                            {
+                                                color_lead_3[a] = board[Xs[2], Ys[2]].grainID;
+
+                                                a++;
+                                            }
+                                            if (Xs[5] >= 0 && Ys[5] >= 0)
+                                            {
+                                                color_lead_3[a] = board[Xs[5], Ys[5]].grainID;
+
+                                                a++;
+                                            }
+                                            if (Xs[7] >= 0 && Ys[7] >= 0)
+                                            {
+                                                color_lead_3[a] = board[Xs[7], Ys[7]].grainID;
+
+                                                a++;
+                                            }
+
+
+
+                                        var n = (from numbers in color_lead_3
+                                                 group numbers by numbers into grouped
+                                                 select new { Number = grouped.Key, Freq = grouped.Count() }).FirstOrDefault();
+
+
+                                        if (n.Freq < 3)
+                                        {
+                                            //Thread.Sleep(10);
+                                            int chance;                                           
+                                            
+                                            chance =  rnd.Next(1, 100);
+                                            if (chance >= config.probability)
+                                            {
+                                                for (int j = 0; j < Xs.Count; j++)
+                                                    if (Xs[j] >= 0 && Ys[j] >= 0)
+                                                        color_lead[j] = board[Xs[j], Ys[j]].grainID;
+
+                                                k = (from numbers in color_lead
+                                                     group numbers by numbers into grouped
+                                                     select new { Number = grouped.Key, Freq = grouped.Count() }).FirstOrDefault();
+
+                                                nextBoard[Xs[i], Ys[i]].grainID = k.Number;
+                                            }
+                                            else
+                                            {
+                                                
+                                            }
+                                                
+
+
+                                        }
+                                        else
+                                        {
+                                            nextBoard[Xs[i], Ys[i]].grainID = n.Number;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //if (m.Number == -1)
+                                        //    continue;
+                                        //if (m.Number == -2)
+                                        //    continue;
+
+
+
+                                        nextBoard[Xs[i], Ys[i]].grainID = m.Number;
+                                    }
                                 }
+                                else
+                                {
+                                    //if (k.Number == -1)
+                                    //    continue;
+                                    //if (k.Number == -2)
+                                    //    continue;
+
+
+
+                                    nextBoard[Xs[i], Ys[i]].grainID = k.Number;
+                                }
+
+                              
                             }
                             else
                             {
+                                //if (nextBoard[Xs[i], Ys[i]].grainID == -2)
+                                //    continue;
                                 nextBoard[Xs[i], Ys[i]].grainID = board[x, y].grainID;
                             }
                         }
@@ -347,6 +462,8 @@ namespace Metal
                 }
             }
         }
+
+
 
         private List<List<int>> prepareNeumann(List<int> X, List<int> Y)
         {
@@ -365,8 +482,6 @@ namespace Metal
             x.Add(X[6]);
             y.Add(Y[6]);
 
-            // X = x;
-            //Y = y;
             List<List<int>> tmp = new List<List<int>>();
             tmp.Add(x);
             tmp.Add(y);
@@ -388,121 +503,7 @@ namespace Metal
             tmp.Add(y);
             return tmp;
         }
-        private List<List<int>> prepareHexLeft(List<int> X, List<int> Y)
-        {
-            List<int> x = new List<int>();
-            List<int> y = new List<int>();
 
-            x.Add(X[0]);
-            y.Add(Y[0]);
-
-            x.Add(X[1]);
-            y.Add(Y[1]);
-
-            x.Add(X[3]);
-            y.Add(Y[3]);
-
-            x.Add(X[4]);
-            y.Add(Y[4]);
-
-            x.Add(X[6]);
-            y.Add(Y[6]);
-
-            x.Add(X[7]);
-            y.Add(Y[7]);
-
-            List<List<int>> tmp = new List<List<int>>();
-            tmp.Add(x);
-            tmp.Add(y);
-            return tmp;
-        }
-        private List<List<int>> prepareHexRight(List<int> X, List<int> Y)
-        {
-            List<int> x = new List<int>();
-            List<int> y = new List<int>();
-
-            x.Add(X[1]);
-            y.Add(Y[1]);
-
-            x.Add(X[2]);
-            y.Add(Y[2]);
-
-            x.Add(X[3]);
-            y.Add(Y[3]);
-
-            x.Add(X[4]);
-            y.Add(Y[4]);
-
-            x.Add(X[5]);
-            y.Add(Y[5]);
-
-            x.Add(X[6]);
-            y.Add(Y[6]);
-
-            List<List<int>> tmp = new List<List<int>>();
-            tmp.Add(x);
-            tmp.Add(y);
-            return tmp;
-        }
-        private List<List<int>> prepareHexRand(List<int> X, List<int> Y)
-        {
-            List<int> x = new List<int>();
-            List<int> y = new List<int>();
-
-            int number = rnd.Next(0, 2);
-            if (number == 1)
-            {
-                return (prepareHexRight(X, Y));
-            }
-            else
-            {
-                return (prepareHexLeft(X, Y));
-            }
-
-        }
-        private List<List<int>> preparePentRandom(List<int> X, List<int> Y)
-        {
-            List<int> x = new List<int>();
-            List<int> y = new List<int>();
-
-            x.Add(X[1]);
-            y.Add(Y[1]);
-
-            x.Add(X[3]);
-            y.Add(Y[3]);
-
-            x.Add(X[4]);
-            y.Add(Y[4]);
-
-            x.Add(X[6]);
-            y.Add(Y[6]);
-            
-            int number = rnd.Next(0, 4);
-
-            switch (number)
-            {
-                case 0:
-                    x.Add(X[0]);
-                    y.Add(Y[0]);
-                    break;
-                case 1:
-                    x.Add(X[2]);
-                    y.Add(Y[2]);
-                    break;
-                case 2:
-                    x.Add(X[5]);
-                    y.Add(Y[5]);
-                    break;
-                case 3:
-                    x.Add(X[7]);
-                    y.Add(Y[7]);
-                    break;
-            }
-            List<List<int>> tmp = new List<List<int>>();
-            tmp.Add(x);
-            tmp.Add(y);
-            return tmp;
-        }
 
         public int CountEmptyCells()
         {
@@ -520,19 +521,24 @@ namespace Metal
             return counter;
         }
 
-        public void AddSeed(int x, int y)
+       
+
+        //public void AddSeed(int x, int y)
+        //{
+        //    config.grainsCount++;
+        //    grainList.Add(new Grain(config.grainsCount - 1, config.grainsCount));
+        //    int X = x / config.grainXsize;
+        //    int Y = y / config.grainYsize;
+        //    board[X, Y].grainID = config.grainsCount - 1;
+        //}
+
+        public void CA_CA(int x,int y)
         {
-            config.grainsCount++;
-            grainList.Add(new Grain(config.grainsCount - 1, config.grainsCount));
-            int X = x / config.grainXsize;
-            int Y = y / config.grainYsize;
-            board[X, Y].grainID = config.grainsCount - 1;
+            config.selected_grains_counter++;
+            selected_grain_ids.Add(board[x, y].grainID);
+            selected_grains.Add(new Grain(board[x,y].grainID,Color.Pink,x,y));
+          
         }
-
-
-
-
-
 
     }
 }
