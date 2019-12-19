@@ -17,7 +17,18 @@ C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csprojAssembly
 C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.Form1.resources
 C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.Properties.Resources.resources
 C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csproj.GenerateResource.cache
-C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csproj.CoreCompileInputs.cache
 C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.csproj.CopyComplete
 C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.exe
 C:\Users\Steefler\Desktop\Nowy folder\Metal\Metal\obj\Debug\Metal.pdb
+C:\Users\tprzyluc\Desktop\Metal\Metal\bin\Debug\Metal.exe.config
+C:\Users\tprzyluc\Desktop\Metal\Metal\bin\Debug\Metal.exe
+C:\Users\tprzyluc\Desktop\Metal\Metal\bin\Debug\Metal.pdb
+C:\Users\tprzyluc\Desktop\Metal\Metal\bin\Debug\Newtonsoft.Json.dll
+C:\Users\tprzyluc\Desktop\Metal\Metal\bin\Debug\Newtonsoft.Json.xml
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.csprojAssemblyReference.cache
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.Form1.resources
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.Properties.Resources.resources
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.csproj.GenerateResource.cache
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.csproj.CopyComplete
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.exe
+C:\Users\tprzyluc\Desktop\Metal\Metal\obj\Debug\Metal.pdb

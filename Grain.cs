@@ -18,6 +18,18 @@ namespace Metal
         public int posX;
         public int posY;
         bool selected;
+        public double energy;
+        private static Random rnd = new Random();
+
+        private int GenerateRandomNumber()
+        {
+            return rnd.Next(0, indexcolors.Length);
+        }
+
+        public void addEnergy(float newEnergy)
+        {
+            this.energy = newEnergy;
+        }
 
         [JsonConstructor]
         public Grain(int i, int N)
@@ -27,13 +39,10 @@ namespace Metal
                 N = 1;
             int c = 20 + (200 / N) * i;
             
-            Random rnd = new Random();
-
-            if (i > indexcolors.Count())
-                i = indexcolors.Count();
-
+        
             
-             color = System.Drawing.ColorTranslator.FromHtml(indexcolors[i]);
+            
+            color = ColorTranslator.FromHtml(indexcolors[this.GenerateRandomNumber()]);
            
            
         }

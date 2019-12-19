@@ -9,13 +9,18 @@ namespace Metal
     class Cell
     {
         public int grainID;
+        public double energy;
         public bool selected;
         public bool boundary;
+        public bool state_changed;
         public Cell()
         {
             grainID = -1;
             selected = false;
             boundary = false;
+            state_changed = false;
+            energy = -1;
+
         }
     }
 }

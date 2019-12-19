@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Numerics;
 
 
 
@@ -23,6 +24,8 @@ namespace Metal
         SimulationConfig config;
         SimulationEngine engine;
         Random rnd = new Random();
+        static int red_color_hanler = 0;
+
 
 
         //bool running;
@@ -50,6 +53,7 @@ namespace Metal
             config.grainYsize = pictureBox1.Size.Height / config.boardSizeY;
             config.minimalGrainsDistance = 0;
             config.probability = Int32.Parse(textBox6.Text);
+            config.MC_count = Int32.Parse(textBox7.Text);
 
             config.inclusions = Int32.Parse(textBox4.Text);
 
@@ -135,7 +139,6 @@ namespace Metal
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-
             engine.GenerateNextStep();
             bitmapGenerator.GenerateBitmap(engine.board, engine.grainList);
 
@@ -150,7 +153,7 @@ namespace Metal
                 List<int> xcords = new List<int>();
                 List<int> ycords = new List<int>();
 
-                if (checkBox3.Checked)
+                if (checkBox5.Checked)
                 {
                     for (int i = 0; i < config.boardSizeX; i++)
                     {
@@ -166,7 +169,7 @@ namespace Metal
                         }
                     }
 
-                   
+
 
                     for (int i = 0; i < config.inclusions; i++)
                     {
@@ -530,6 +533,7 @@ namespace Metal
                         if (engine.board[i, j].grainID == -2)
                             continue;
                         engine.board[i, j].grainID = -1;
+                        engine.board[i, j].state_changed = false;
                     }
                 }
             }
@@ -575,8 +579,6 @@ namespace Metal
             pictureBox1.Image = bitmapGenerator.bmp;
 
 
-
-
         }
 
         private void button9_Click(object sender, EventArgs e)
@@ -617,14 +619,14 @@ namespace Metal
                     }
                     else
                     {
-                        if(i-1>0)
-                            if(tmp != bitmapGenerator.bmp.GetPixel(i-1, j))
+                        if (i - 1 > 0)
+                            if (tmp != bitmapGenerator.bmp.GetPixel(i - 1, j))
                             {
-                                xcords.Add(i-1);
+                                xcords.Add(i - 1);
                                 ycords.Add(j);
                             }
 
-                        if (i + 1  < config.boardSizeX)
+                        if (i + 1 < config.boardSizeX)
                             if (tmp != bitmapGenerator.bmp.GetPixel(i + 1, j))
                             {
                                 xcords.Add(i + 1);
@@ -675,7 +677,7 @@ namespace Metal
 
 
             bitmapGenerator.CA_board(engine.board);
-                    pictureBox1.Image = bitmapGenerator.bmp;
+            pictureBox1.Image = bitmapGenerator.bmp;
 
 
 
@@ -762,7 +764,7 @@ namespace Metal
             bitmapGenerator.CA_board(engine.board);
             pictureBox1.Image = bitmapGenerator.bmp;
 
-            int boundary_counter=0;
+            int boundary_counter = 0;
 
             for (int i = 0; i < config.boardSizeX; i++)
             {
@@ -774,7 +776,7 @@ namespace Metal
 
                 }
             }
-            boundary_counter = (boundary_counter*100 / (config.boardSizeX * config.boardSizeY));
+            boundary_counter = (boundary_counter * 100 / (config.boardSizeX * config.boardSizeY));
             label8.Text = boundary_counter.ToString() + "%";
 
 
@@ -783,6 +785,502 @@ namespace Metal
         private void label8_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+            config.MC_count = Int32.Parse(textBox7.Text);
+            Random rnd = new Random();
+            int x, y, k;
+            int index;
+            int energy;
+            int ID;
+            int temp_energy;
+            List<int> list_ids = new List<int>();
+            List<Vector2> pointCords = new List<Vector2>();
+
+            List<Grain> energyList = engine.grainList;
+            for (int i = 0; i < config.MC_count; i++)
+            {
+                energyList.Add(new Grain(i, config.MC_count));
+            }
+
+            for (int i = 0; i < config.boardSizeX; i++)
+            {
+                for (int j = 0; j < config.boardSizeY; j++)
+                {
+                    if (engine.board[i, j].grainID == -1)
+                    {
+                        engine.board[i, j].grainID = rnd.Next(0, config.MC_count);
+                        pointCords.Add(new Vector2(i, j));
+                    }
+                }
+            }
+            for (int mcs = 0; mcs < Int32.Parse(textBox10.Text) + 1; mcs++)
+            {
+
+
+                while (pointCords.Count > 0)
+                {
+
+                    index = rnd.Next(0, pointCords.Count);
+                    x = (int)pointCords[index].X;
+                    y = (int)pointCords[index].Y;
+                    engine.board[x, y].state_changed = true;
+                    energy = 0;
+                    temp_energy = 0;
+
+
+                    if (x - 1 > 0 && y - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x - 1, y - 1].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x - 1, y - 1].grainID);
+                        }
+
+                    if (y - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x, y - 1].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x, y - 1].grainID);
+                        }
+
+                    if (x + 1 < config.boardSizeX & y - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x + 1, y - 1].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x + 1, y - 1].grainID);
+                        }
+
+                    if (x - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x - 1, y].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x - 1, y].grainID);
+                        }
+
+                    if (x + 1 < config.boardSizeX)
+                        if (engine.board[x, y].grainID != engine.board[x + 1, y].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x + 1, y].grainID);
+                        }
+
+                    if (x - 1 > 0 & y + 1 < config.boardSizeY)
+                        if (engine.board[x, y].grainID != engine.board[x - 1, y + 1].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x - 1, y + 1].grainID);
+                        }
+
+
+                    if (y + 1 < config.boardSizeY)
+                        if (engine.board[x, y].grainID != engine.board[x, y + 1].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x, y + 1].grainID);
+                        }
+
+
+                    if (x + 1 < config.boardSizeX & y + 1 < config.boardSizeY)
+                        if (engine.board[x, y].grainID != engine.board[x + 1, y + 1].grainID)
+                        {
+                            energy++;
+                            list_ids.Add(engine.board[x + 1, y + 1].grainID);
+                        }
+
+                    k = rnd.Next(0, list_ids.Count);
+                    ID = engine.board[x, y].grainID;
+                    engine.board[x, y].grainID = list_ids[k];
+                    temp_energy = energy;
+                    energy = 0;
+
+                    if (x - 1 > 0 && y - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x - 1, y - 1].grainID)
+                        {
+                            energy++;
+                        }
+
+                    if (y - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x, y - 1].grainID)
+                        {
+                            energy++;
+                        }
+
+                    if (x + 1 < config.boardSizeX & y - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x + 1, y - 1].grainID)
+                        {
+                            energy++;
+                        }
+
+                    if (x - 1 > 0)
+                        if (engine.board[x, y].grainID != engine.board[x - 1, y].grainID)
+                        {
+                            energy++;
+                        }
+
+                    if (x + 1 < config.boardSizeX)
+                        if (engine.board[x, y].grainID != engine.board[x + 1, y].grainID)
+                        {
+                            energy++;
+                        }
+
+                    if (x - 1 > 0 & y + 1 < config.boardSizeY)
+                        if (engine.board[x, y].grainID != engine.board[x - 1, y + 1].grainID)
+                        {
+                            energy++;
+                        }
+
+
+                    if (y + 1 < config.boardSizeY)
+                        if (engine.board[x, y].grainID != engine.board[x, y + 1].grainID)
+                        {
+                            energy++;
+                        }
+
+
+                    if (x + 1 < config.boardSizeX & y + 1 < config.boardSizeY)
+                        if (engine.board[x, y].grainID != engine.board[x + 1, y + 1].grainID)
+                        {
+                            energy++;
+                        }
+
+                    if (energy > temp_energy)
+                        engine.board[x, y].grainID = ID;
+
+                    ID = -1;
+
+                    pointCords.Remove(pointCords[index]);
+                }
+
+                for (int i = 0; i < config.boardSizeX; i++)
+                {
+                    for (int j = 0; j < config.boardSizeY; j++)
+                    {
+                        pointCords.Add(new Vector2(i, j));
+
+                    }
+                }
+            }
+
+
+
+
+            bitmapGenerator.GenerateBitmap(engine.board, energyList);
+            pictureBox1.Image = bitmapGenerator.bmp;
+        }
+
+        private void checkBox3_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox10_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button13_Click(object sender, EventArgs e)
+        {
+
+            for (int z = 0; z < Int32.Parse(textBox11.Text); z++)
+            {
+
+                if (checkBox3.Checked)
+                {
+                    Color tmp;
+                    tmp = Color.White;
+                    List<int> xcords = new List<int>();
+                    List<int> ycords = new List<int>();
+
+                    for (int i = 0; i < config.boardSizeX; i++)
+                    {
+                        for (int j = 0; j < config.boardSizeY; j++)
+                        {
+                            if (tmp != bitmapGenerator.bmp.GetPixel(i, j))
+                            {
+                                tmp = bitmapGenerator.bmp.GetPixel(i, j);
+                                xcords.Add(i);
+                                ycords.Add(j);
+
+                            }
+                        }
+                    }
+
+                    int xs = rnd.Next(0, xcords.Count);
+                    int x = xcords[xs];
+                    int y = ycords[xs];
+
+                    if (engine.board[x, y].energy == 0)
+
+
+                        engine.board[x, y].energy = 0;
+                    engine.grainList.Add(new Grain(engine.grainList.Count, Color.FromArgb(red_color_hanler, 0, 0), x, y));
+                    engine.board[x, y].grainID = engine.grainList.Count - 1;
+                    double r, rr;
+                    r = 4;
+                    rr = Math.Pow(r, 2);
+                    for (int j = x - (int)r; j <= x + r; j++)
+                        for (int k = y - (int)r; k <= y + r; k++)
+                            if (Math.Abs(Math.Pow(j - x, 2) + Math.Pow(k - y, 2)) <= rr)
+                                if (j < config.boardSizeX && j >= 0 && k < config.boardSizeY && k >= 0)
+                                {
+                                    engine.board[j, k].energy = 0;
+                                    engine.board[j, k].grainID = engine.grainList.Count - 1;
+                                }
+
+                    red_color_hanler += 2;
+
+
+
+
+
+
+
+
+                }
+
+
+                if (checkBox4.Checked)
+                {
+
+                    int x = rnd.Next(0, config.boardSizeX);
+                    int y = rnd.Next(0, config.boardSizeY);
+
+
+
+                    engine.board[x, y].energy = 0;
+                    double r, rr;
+                    r = 4;
+                    rr = Math.Pow(r, 2);
+                    for (int j = x - (int)r; j <= x + r; j++)
+                        for (int k = y - (int)r; k <= y + r; k++)
+                            if (Math.Abs(Math.Pow(j - x, 2) + Math.Pow(k - y, 2)) <= rr)
+                                if (j < config.boardSizeX && j >= 0 && k < config.boardSizeY && k >= 0)
+                                    engine.board[j, k].energy = 0;
+
+
+                }
+            }
+
+            bitmapGenerator.GenerateBitmap(engine.board, engine.grainList);
+
+            pictureBox1.Image = bitmapGenerator.bmp;
+
+
+        }
+
+        private void button14_Click(object sender, EventArgs e)
+        {
+            config.MC_count = Int32.Parse(textBox7.Text);
+            Random rnd = new Random();
+            int x, y, k;
+            int index;
+            int energy;
+            int ID;
+            int temp_energy;
+            List<int> list_ids = new List<int>();
+            List<Vector2> pointCords = new List<Vector2>();
+
+            List<Grain> energyList = engine.grainList;
+     
+            for (int mcs = 0; mcs < Int32.Parse(textBox10.Text) + 1; mcs++)
+            {
+                
+
+                for (int i = 0; i < config.boardSizeX; i++)
+                {
+                    for (int j = 0; j < config.boardSizeY; j++)
+                    {
+                        
+                      pointCords.Add(new Vector2(i, j));
+                        
+                    }
+                }
+
+                while (pointCords.Count > 0)
+                {
+                    Console.WriteLine("WORKING...");
+                    index = rnd.Next(0, pointCords.Count);
+                    x = (int)pointCords[index].X;
+                    y = (int)pointCords[index].Y;
+                    engine.board[x, y].state_changed = true;
+                    energy = 0;
+                    temp_energy = 0;
+
+                    if (engine.board[x, y].energy == 0)
+                        continue;
+
+                    if (x - 1 > 0 && y - 1 > 0)
+                        if (engine.board[x - 1, y - 1].energy == 0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x - 1, y - 1].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+                    if (y - 1 > 0)
+                        if (engine.board[x, y - 1].energy == 0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x, y - 1].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+                    if (x + 1 < config.boardSizeX & y - 1 > 0)
+                        if (engine.board[x + 1, y - 1].energy ==0 )
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x + 1, y - 1].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+                    if (x - 1 > 0)
+                        if (engine.board[x - 1, y].energy == 0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x - 1, y].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+                    if (x + 1 < config.boardSizeX)
+                        if (engine.board[x + 1, y].energy == 0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x + 1, y].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+                    if (x - 1 > 0 & y + 1 < config.boardSizeY)
+                        if (engine.board[x - 1, y + 1].energy == 0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x - 1, y + 1].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+
+                    if (y + 1 < config.boardSizeY)
+                        if (engine.board[x, y + 1].energy ==0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x, y + 1].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+
+                    if (x + 1 < config.boardSizeX & y + 1 < config.boardSizeY)
+                        if (engine.board[x + 1, y + 1].energy == 0)
+                        {
+                            energy++;
+                            engine.board[x, y].grainID = engine.board[x + 1, y + 1].grainID;
+                            engine.board[x, y].energy = 0;
+                        }
+
+                    
+                    
+
+                    pointCords.Remove(pointCords[index]);
+                }
+
+            
+            }
+
+
+            Console.WriteLine("wywolano");
+
+            bitmapGenerator.GenerateBitmap(engine.board, energyList);
+            pictureBox1.Image = bitmapGenerator.bmp;
+        }
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+            bitmapGenerator.GenerateBitmap(engine.board, engine.grainList);
+            pictureBox1.Image = bitmapGenerator.bmp;
+            for (int i = 0; i < config.boardSizeX; i++)
+            {
+                for (int j = 0; j < config.boardSizeY; j++)
+                {
+                    engine.board[i, j].energy = 0;
+                    engine.board[i, j].boundary = false;
+                }
+            }
+
+            double maximum, minimum;
+            Random random = new Random();
+
+            maximum = Double.Parse(textBox8.Text) + 0.1* Double.Parse(textBox8.Text);
+            minimum = Double.Parse(textBox8.Text) - 0.1 * Double.Parse(textBox8.Text);
+
+            for (int i = 0; i < config.boardSizeX; i++)
+            {
+                for (int j = 0; j < config.boardSizeY; j++)
+                {
+                   engine.board[i,j].energy = random.NextDouble() * (maximum - minimum) + minimum;
+                }
+            }
+
+
+
+            Color tmp;
+            tmp = Color.White;
+            List<int> xcords = new List<int>();
+            List<int> ycords = new List<int>();
+
+            for (int i = 0; i < config.boardSizeX; i++)
+            {
+                for (int j = 0; j < config.boardSizeY; j++)
+                {
+                    if (tmp != bitmapGenerator.bmp.GetPixel(i, j))
+                    {
+                        tmp = bitmapGenerator.bmp.GetPixel(i, j);
+                        xcords.Add(i);
+                        ycords.Add(j);
+
+                    }
+                    else
+                    {
+                        if (i - 1 > 0)
+                            if (tmp != bitmapGenerator.bmp.GetPixel(i - 1, j))
+                            {
+                                xcords.Add(i - 1);
+                                ycords.Add(j);
+                            }
+                        if (i + 1 < config.boardSizeX)
+                            if (tmp != bitmapGenerator.bmp.GetPixel(i + 1, j))
+                            {
+                                xcords.Add(i + 1);
+                                ycords.Add(j);
+                            }
+                    }
+                }
+            }
+
+
+
+            maximum = Double.Parse(textBox9.Text) + 0.1 * Double.Parse(textBox9.Text);
+            minimum = Double.Parse(textBox9.Text) - 0.1 * Double.Parse(textBox9.Text);
+            for (int i = 0; i < xcords.Count; i++)
+            { 
+                int x = xcords[i];
+                int y = ycords[i];
+
+                engine.board[x, y].energy = random.NextDouble() * (maximum - minimum) + minimum;
+                engine.board[x, y].boundary = true;
+            }
+
+            bitmapGenerator.DrawEnergy(engine.board);
+            pictureBox1.Image = bitmapGenerator.bmp;
+
+          
+
+
+        }
+
+        private void button16_Click(object sender, EventArgs e)
+        {
+            bitmapGenerator.GenerateBitmap(engine.board, engine.grainList);
+            pictureBox1.Image = bitmapGenerator.bmp;
         }
     }
 }

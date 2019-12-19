@@ -88,7 +88,21 @@ namespace Metal
                     board[x, y].grainID = grain.ID;
             }
         }
+        public void GenerateRandomState()
+        {
+            Random rnd = new Random();
+            int x = grainList.Count;
 
+            for (int i = 0; i < config.boardSizeX; i++)
+            {
+                for (int j = 0; j < config.boardSizeY; j++)
+                {
+                    //board[i, j] = rnd.Next(1,x);
+                }
+            }
+                
+            
+        }
 
         public void GenerateNextStep()
         {
@@ -100,6 +114,7 @@ namespace Metal
                     nextBoard[i, j] = new Cell();
                     nextBoard[i, j].grainID = board[i, j].grainID;
                     nextBoard[i, j].selected = board[i, j].selected;
+                    nextBoard[i, j].state_changed = board[i, j].state_changed;
                 }
             }
 
@@ -281,10 +296,7 @@ namespace Metal
 
         private void overtake_moore(Cell[,] nextBoard, int x, int y, List<int> Xs, List<int> Ys)
         {
-            //for (int i = 0; i < Xs.Count; i++)
-            //{
-            //    Console.WriteLine("X: " + x + " Y: " + y + " Xs: " + Xs[i] + " Ys: " + Ys[i]);
-            //}
+          
             if (board[x, y].grainID >= 0)
             {
                 for (int i = 0; i < Xs.Count; i++)

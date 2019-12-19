@@ -21,6 +21,7 @@ namespace Metal
         public int inclusions;
         public int probability;
         public int selected_grains_counter;
+        public int MC_count;
 
         public SimulationConfig(int X, int Y, int count, neighborhood type, int distance)
         {
